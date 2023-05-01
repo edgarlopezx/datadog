@@ -1,128 +1,30 @@
 # JSON content as a string
 $jsonContent = @"
 {
-    "name": "[product][env] API Healthcheck Test - https://application-env.domain.com/health/ready",
-    "status": "live",
-    "type": "api",
-    "tags": [
-        "env:env",
-        "product:product",
-        "type:synthetics",
-        "provider:healthcheck_test",
-        "resource:API",
-        "team:cloud"
-    ],
-    "config": {
-        "assertions": [
-            {
-                "operator": "lessThan",
-                "type": "responseTime",
-                "target": 50000
-            },
-            {
-                "operator": "is",
-                "type": "statusCode",
-                "target": 503
-            },
-            {
-                "operator": "is",
-                "property": "content-type",
-                "type": "header",
-                "target": "application/json; charset=utf-8"
-            },
-            {
-                "type": "body",
-                "operator": "validatesJSONPath",
-                "target": {
-                    "jsonPath": "$.DependencyHealthChecks.azureblob.Status",
-                    "operator": "contains",
-                    "targetValue": "Healthy"
-                }
-            },
-            {
-                "type": "body",
-                "operator": "validatesJSONPath",
-                "target": {
-                    "jsonPath": "$.DependencyHealthChecks.AzureFunction.Status",
-                    "operator": "contains",
-                    "targetValue": "Healthy"
-                }
-            },
-            {
-                "type": "body",
-                "operator": "validatesJSONPath",
-                "target": {
-                    "jsonPath": "$.DependencyHealthChecks.EPSPAzureFunction.Status",
-                    "operator": "contains",
-                    "targetValue": "Healthy"
-                }
-            },
-            {
-                "type": "body",
-                "operator": "validatesJSONPath",
-                "target": {
-                    "jsonPath": "$.DependencyHealthChecks.EventHub.Status",
-                    "operator": "contains",
-                    "targetValue": "Healthy"
-                }
-            },
-            {
-                "type": "body",
-                "operator": "validatesJSONPath",
-                "target": {
-                    "jsonPath": "$.DependencyHealthChecks.ServiceBus.Status",
-                    "operator": "contains",
-                    "targetValue": "Unhealthy"
-                }
-            },
-            {
-                "type": "body",
-                "operator": "validatesJSONPath",
-                "target": {
-                    "jsonPath": "$.DependencyHealthChecks.SQLServer.Status",
-                    "operator": "contains",
-                    "targetValue": "Healthy"
-                }
-            },
-            {
-                "type": "body",
-                "operator": "validatesJSONPath",
-                "target": {
-                    "jsonPath": "$.OverallStatus",
-                    "operator": "contains",
-                    "targetValue": "Unhealthy"
-                }
-            }
-        ],
-        "request": {
-            "method": "GET",
-            "url": "https://application-env.domain.com/health/ready"
-        }
+  "OverallStatus": "Healthy",
+  "TotalCheckDuration": "0:0.07",
+  "DependencyHealthChecks": {
+    "SQLServer": {
+      "Status": "Healthy",
+      "Duration": "0:0.00"
     },
-    "message": "ALERT: Pagerduty [product] in [env] true",
-    "options": {
-        "httpVersion": "http1",
-        "min_failure_duration": 300,
-        "min_location_failed": 1,
-        "monitor_name": "[product][env] API Healthcheck Test - https://application-env.domain.com/health/ready",
-        "monitor_options": {
-            "renotify_interval": 0,
-            "on_missing_data": "show_no_data",
-            "notify_audit": false,
-            "new_host_delay": 300,
-            "include_tags": true
-        },
-        "monitor_priority": 2,
-        "retry": {
-            "count": 2,
-            "interval": 500
-        },
-        "tick_every": 86400
+    "App": {
+      "Status": "Healthy",
+      "Duration": "0:0.05"
     },
-    "locations": [
-        "pl:ww44455vdddf"
-    ],
-    "subtype": "http"
+    "AzureFunction": {
+      "Status": "Healthy",
+      "Duration": "0:0.07"
+    },
+    "azureblob": {
+      "Status": "Healthy",
+      "Duration": "0:0.01"
+    },
+    "azureeventhub": {
+      "Status": "Healthy",
+      "Duration": "0:0.00"
+    }
+  }
 }
 "@
 
@@ -134,51 +36,95 @@ $apiKey = $env:DD_API_KEY
 $appKey = $env:DD_APP_KEY
 
 # Set test parameters
-$testName = "Catalog Synthetic Test"
+$product = "product"
+$env = "env"
+$testName = "[$product][$env] API Healthcheck Test - https://application-$env.domain.com/health/ready"
 $testType = "api"
+$tags = @("env:$env", "product:$product", "type:synthetics", "provider:healthcheck_test", "resource:API", "team:cloud")
+$locations = @("pl:ww44455vdddf")
+$monitorPriority = 2
+$alertMessage = "ALERT: Pagerduty [$product] in [$env] true"
+
 $testConfig = @{
-    "request" = @{
-        "method" = "GET"
-        "url" = "https://your-api-url.com/healthcheck" # Replace with your actual API URL
+    "name" = $testName
+    "status" = "live"
+    "type" = $testType
+    "tags" = $tags
+    "config" = @{
+        "request" = @{
+            "method" = "GET"
+            "url" = "https://application-$env.domain.com/health/ready"
+        }
+        "assertions" = @()
     }
-    "assertions" = @()
+    "message" = $alertMessage
+    "options" = @{
+        "httpVersion" = "http1"
+        "min_failure_duration" = 300
+        "min_location_failed" = 1
+        "monitor_name" = $testName
+        "monitor_options" = @{
+            "renotify_interval" = 0
+            "on_missing_data" = "show_no_data"
+            "notify_audit" = $false
+            "new_host_delay" = 300
+            "include_tags" = $true
+        }
+        "monitor_priority" = $monitorPriority
+        "retry" = @{
+            "count" = 2
+            "interval" = 500
+        }
+        "tick_every" = 86400
+    }
+    "locations" = $locations
+    "subtype" = "http"
 }
 
-# Add assertions for overall status and dependency health checks
-$testConfig.assertions += @{
-    "operator" = "isEqualTo"
-    "type" = "body"
-    "target" = "OverallStatus"
-    "property" = "value"
-    "expectedValue" = "Healthy"
+# Add assertions for response time, status code, and content-type
+$testConfig.config.assertions += @{
+    "operator" = "lessThan"
+    "type" = "responseTime"
+    "target" = 50000
 }
 
-foreach ($dependency in $jsonObj.DependencyHealthChecks.PSObject.Properties) {
-    $dependencyName = $dependency.Name
-    $testConfig.assertions += @{
-        "operator" = "isEqualTo"
+$testConfig.config.assertions += @{
+    "operator" = "is"
+    "type" = "statusCode"
+    "target" = 200
+}
+
+$testConfig.config.assertions += @{
+    "operator" = "is"
+    "property" = "content-type"
+    "type" = "header"
+    "target" = "application/json; charset=utf-8"
+}
+
+# Add JSON path assertions for dependency health checks
+$dependencyChecks = $jsonObj.DependencyHealthChecks.PSObject.Properties.Name
+foreach ($dependency in $dependencyChecks) {
+    $testConfig.config.assertions += @{
         "type" = "body"
-        "target" = "DependencyHealthChecks.$dependencyName.Status"
-        "property" = "value"
-        "expectedValue" = "Healthy"
+        "operator" = "validatesJSONPath"
+        "target" = @{
+            "jsonPath" = "$.DependencyHealthChecks.$dependency.Status"
+            "operator" = "contains"
+            "targetValue" = "Healthy"
+        }
     }
 }
 
-# Convert the test config to JSON
-$testConfigJson = $testConfig | ConvertTo-Json
-
-# Prepare the API URL
-$apiUrl = "https://api.datadoghq.com/api/v1/synthetics/tests"
-
-# Prepare the headers
-$headers = @{
-    "Content-Type" = "application/json"
-    "DD-API-KEY" = $apiKey
-    "DD-APPLICATION-KEY" = $appKey
+# Add JSON path assertion for OverallStatus
+$testConfig.config.assertions += @{
+    "type" = "body"
+    "operator" = "validatesJSONPath"
+    "target" = @{
+        "jsonPath" = "$.OverallStatus"
+        "operator" = "contains"
+        "targetValue" = "Healthy"
+    }
 }
 
-# Call the Datadog REST API to create the synthetic test
-$response = Invoke-WebRequest -Uri $apiUrl -Method 'POST' -Headers $headers -Body $testConfigJson
-
-# Output the result
-$response.Content
+# Display the test configuration
+$testConfig | ConvertTo-Json -Depth 5
