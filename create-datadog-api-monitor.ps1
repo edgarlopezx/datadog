@@ -2,6 +2,36 @@
 $apiKey = "your_api_key"
 $appKey = "your_app_key"
 
+<#
+{
+  "OverallStatus": "Healthy",
+  "TotalCheckDuration": "0:0.07",
+  "DependencyHealthChecks": {
+    "SQLServer": {
+      "Status": "Healthy",
+      "Duration": "0:0.00"
+    },
+    "App": {
+      "Status": "Healthy",
+      "Duration": "0:0.05"
+    },
+    "AzureFunction": {
+      "Status": "Healthy",
+      "Duration": "0:0.07"
+    },
+    "azureblob": {
+      "Status": "Healthy",
+      "Duration": "0:0.01"
+    },
+    "azureeventhub": {
+      "Status": "Healthy",
+      "Duration": "0:0.00"
+    }
+  }
+}
+#>
+
+
 # Define the JSON data for your Synthetic API test
 $json = @"
 {
