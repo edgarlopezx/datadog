@@ -1,0 +1,86 @@
+# JSON content as a string
+$jsonContent = @"
+{
+  "OverallStatus": "Healthy",
+  "TotalCheckDuration": "0:0.07",
+  "DependencyHealthChecks": {
+    "SQLServer": {
+      "Status": "Healthy",
+      "Duration": "0:0.00"
+    },
+    "App": {
+      "Status": "Healthy",
+      "Duration": "0:0.05"
+    },
+    "AzureFunction": {
+      "Status": "Healthy",
+      "Duration": "0:0.07"
+    },
+    "azureblob": {
+      "Status": "Healthy",
+      "Duration": "0:0.01"
+    },
+    "azureeventhub": {
+      "Status": "Healthy",
+      "Duration": "0:0.00"
+    }
+  }
+}
+"@
+
+# Convert JSON string to a PowerShell object
+$jsonObj = ConvertFrom-Json -InputObject $jsonContent
+
+# Set API key and APP key
+$apiKey = $env:DD_API_KEY
+$appKey = $env:DD_APP_KEY
+
+# Set test parameters
+$testName = "Catalog Synthetic Test"
+$testType = "api"
+$testConfig = @{
+    "request" = @{
+        "method" = "GET"
+        "url" = "https://your-api-url.com/healthcheck" # Replace with your actual API URL
+    }
+    "assertions" = @()
+}
+
+# Add assertions for overall status and dependency health checks
+$testConfig.assertions += @{
+    "operator" = "isEqualTo"
+    "type" = "body"
+    "target" = "OverallStatus"
+    "property" = "value"
+    "expectedValue" = "Healthy"
+}
+
+foreach ($dependency in $jsonObj.DependencyHealthChecks.PSObject.Properties) {
+    $dependencyName = $dependency.Name
+    $testConfig.assertions += @{
+        "operator" = "isEqualTo"
+        "type" = "body"
+        "target" = "DependencyHealthChecks.$dependencyName.Status"
+        "property" = "value"
+        "expectedValue" = "Healthy"
+    }
+}
+
+# Convert the test config to JSON
+$testConfigJson = $testConfig | ConvertTo-Json
+
+# Prepare the API URL
+$apiUrl = "https://api.datadoghq.com/api/v1/synthetics/tests"
+
+# Prepare the headers
+$headers = @{
+    "Content-Type" = "application/json"
+    "DD-API-KEY" = $apiKey
+    "DD-APPLICATION-KEY" = $appKey
+}
+
+# Call the Datadog REST API to create the synthetic test
+$response = Invoke-WebRequest -Uri $apiUrl -Method 'POST' -Headers $headers -Body $testConfigJson
+
+# Output the result
+$response.Content
